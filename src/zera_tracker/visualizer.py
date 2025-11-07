@@ -4,11 +4,62 @@ Visualizer - creates charts for unified ZERA price history
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import datetime
+from matplotlib.patches import Rectangle
+from matplotlib.lines import Line2D
+from datetime import datetime, timedelta
 import pandas as pd
 from typing import Dict
 import config
 import os
+
+
+def plot_candlesticks(ax, df, color='#4ECDC4', alpha=0.8):
+    """
+    Plot candlestick chart on given axes
+
+    Args:
+        ax: Matplotlib axes object
+        df: DataFrame with columns: date, open, high, low, close
+        color: Base color for candlesticks
+        alpha: Transparency
+    """
+    # Calculate candlestick width based on data density
+    if len(df) > 1:
+        avg_timedelta = (df['date'].iloc[-1] - df['date'].iloc[0]) / len(df)
+        candle_width = avg_timedelta * 0.6  # 60% of period for candle body
+    else:
+        candle_width = timedelta(days=0.6)
+
+    for idx, row in df.iterrows():
+        date = row['date']
+        open_price = row['open']
+        high = row['high']
+        low = row['low']
+        close = row['close']
+
+        # Determine if bullish (green) or bearish (red)
+        is_bullish = close >= open_price
+        body_color = '#26a69a' if is_bullish else '#ef5350'  # Green/Red
+
+        # Draw high-low wick (thin line)
+        ax.plot([date, date], [low, high],
+                color=body_color, linewidth=1, alpha=alpha, zorder=1)
+
+        # Draw body (rectangle from open to close)
+        body_height = abs(close - open_price)
+        body_bottom = min(open_price, close)
+
+        if body_height > 0:
+            rect = Rectangle((mdates.date2num(date) - candle_width.total_seconds()/(2*86400), body_bottom),
+                           candle_width.total_seconds()/86400, body_height,
+                           facecolor=body_color, edgecolor=body_color,
+                           alpha=alpha, linewidth=0.5, zorder=2)
+            ax.add_patch(rect)
+        else:
+            # Doji (open == close) - draw thin horizontal line
+            ax.plot([mdates.date2num(date) - candle_width.total_seconds()/(2*86400),
+                    mdates.date2num(date) + candle_width.total_seconds()/(2*86400)],
+                   [close, close], color=body_color, linewidth=1.5, alpha=alpha, zorder=2)
 
 
 def create_price_chart(df: pd.DataFrame, output_path: str = None):
@@ -36,9 +87,12 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
     migration_1 = datetime.fromtimestamp(config.MIGRATION_DATES['mon3y_to_zera'])
     migration_2 = datetime.fromtimestamp(config.MIGRATION_DATES['zera_Raydium_to_Meteora'])
 
-    # Plot 1: Price over time
-    # Plot each pool's real data
+    # Plot 1: Candlestick chart
+    # Plot each pool's real data as candlesticks
     real_df = df[~df.get('is_interpolated', False)].copy()
+
+    # Track which pools were plotted for legend
+    plotted_pools = []
 
     for pool_name in real_df['pool_name'].unique():
         pool_df = real_df[real_df['pool_name'] == pool_name].copy()
@@ -53,19 +107,11 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
         # Meteora has no cutoff (it's current, starts at migration_2)
 
         if len(pool_df) > 0:
-            # Calculate bar width based on data density
-            if len(pool_df) > 1:
-                avg_timedelta = (pool_df['date'].iloc[-1] - pool_df['date'].iloc[0]) / len(pool_df)
-                bar_width = avg_timedelta * 0.8  # 80% of period for spacing
-            else:
-                bar_width = 0.8
+            # Plot candlesticks for this pool
+            plot_candlesticks(ax1, pool_df, color=pool_colors.get(pool_name, '#333333'), alpha=0.9)
+            plotted_pools.append((pool_name, pool_colors.get(pool_name, '#333333')))
 
-            ax1.bar(pool_df['date'], pool_df['close'],
-                    label=config.POOLS[pool_name]['name'],
-                    color=pool_colors.get(pool_name, '#333333'),
-                    width=bar_width, alpha=0.8, edgecolor='black', linewidth=0.5)
-
-    # Plot interpolated segments (each gap separately)
+    # Plot interpolated segments as thin lines (gaps)
     interp_df = df[df.get('is_interpolated', False)].copy()
     if len(interp_df) > 0:
         # Group by pool_name to separate the two migration gaps
@@ -76,24 +122,15 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
             # Sort by timestamp
             interp_segment = interp_segment.sort_values('timestamp')
 
-            # Calculate bar width for interpolated data
-            if len(interp_segment) > 1:
-                avg_timedelta_interp = (interp_segment['date'].iloc[-1] - interp_segment['date'].iloc[0]) / len(interp_segment)
-                bar_width_interp = avg_timedelta_interp * 0.8
-            else:
-                bar_width_interp = 0.8
-
-            # Plot this gap's interpolated points only
+            # Plot interpolated data as dashed line
             if not legend_added:
-                ax1.bar(interp_segment['date'], interp_segment['close'],
-                        color='#888888',
-                        width=bar_width_interp, alpha=0.3, edgecolor='gray', linewidth=0.3,
-                        label='Interpolated (Migration Gaps)', linestyle='--')
+                ax1.plot(interp_segment['date'], interp_segment['close'],
+                        color='#888888', linewidth=1.5, alpha=0.5, linestyle='--',
+                        label='Interpolated (Migration Gaps)')
                 legend_added = True
             else:
-                ax1.bar(interp_segment['date'], interp_segment['close'],
-                        color='#888888',
-                        width=bar_width_interp, alpha=0.3, edgecolor='gray', linewidth=0.3)
+                ax1.plot(interp_segment['date'], interp_segment['close'],
+                        color='#888888', linewidth=1.5, alpha=0.5, linestyle='--')
 
     # Add migration markers
     for event_name, timestamp in config.MIGRATION_DATES.items():
@@ -106,10 +143,23 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7),
                 fontsize=8)
 
+    # Create custom legend for candlesticks and interpolated data
+    legend_elements = []
+
+    # Add legend entries for each plotted pool
+    for pool_name, color in plotted_pools:
+        legend_elements.append(Line2D([0], [0], color=color, linewidth=8,
+                                     label=config.POOLS[pool_name]['name']))
+
+    # Add interpolated data to legend if it exists
+    if len(interp_df) > 0:
+        legend_elements.append(Line2D([0], [0], color='#888888', linewidth=2,
+                                     linestyle='--', label='Interpolated (Migration Gaps)'))
+
     ax1.set_xlabel('Date', fontsize=12)
     ax1.set_ylabel('Price (USD)', fontsize=12)
-    ax1.set_title('Closing Price Over Time', fontsize=14)
-    ax1.legend(loc='upper left', fontsize=10)
+    ax1.set_title('OHLC Candlestick Chart', fontsize=14)
+    ax1.legend(handles=legend_elements, loc='upper left', fontsize=10)
     ax1.grid(True, alpha=0.3)
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
