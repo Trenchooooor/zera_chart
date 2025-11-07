@@ -15,15 +15,16 @@ from datetime import datetime
 
 # Import our modules
 import config
-from fetcher import fetch_all_pools
-from consolidator import (
+from src.zera_tracker import (
+    fetch_all_pools,
     create_unified_dataframe,
     interpolate_migration_gaps,
     add_migration_markers,
     get_summary_stats,
-    print_summary
+    print_summary,
+    create_price_chart,
+    create_comparison_chart
 )
-from visualizer import create_price_chart, create_comparison_chart
 
 
 def main():

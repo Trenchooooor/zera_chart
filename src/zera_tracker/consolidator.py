@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List
 import config
-from fetcher import parse_ohlcv_data
+from .fetcher import parse_ohlcv_data
 
 
 def create_unified_dataframe(all_pool_data: Dict) -> pd.DataFrame:
