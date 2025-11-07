@@ -228,7 +228,8 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
         if len(pool_df) > 0:
             label = simple_labels.get(pool_name, pool_name)
-            ax2.bar(pool_df['date'], pool_df['volume'],
+            # Scale volume to millions
+            ax2.bar(pool_df['date'], pool_df['volume'] / 1_000_000,
                    label=label,
                    color=pool_colors.get(pool_name, '#333333'),
                    alpha=0.6, width=0.8)
@@ -240,7 +241,7 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
                    linewidth=1, alpha=0.6, zorder=0)
 
     ax2.set_xlabel('Date', fontsize=12)
-    ax2.set_ylabel('Volume (USD)', fontsize=12)
+    ax2.set_ylabel('Volume (Millions USD)', fontsize=12)
     ax2.set_title('Trading Volume Over Time', fontsize=14)
     ax2.grid(True, alpha=0.3, axis='y')
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
