@@ -62,6 +62,45 @@ def plot_candlesticks(ax, df, color='#4ECDC4', alpha=0.8):
                    [close, close], color=body_color, linewidth=1.5, alpha=alpha, zorder=2)
 
 
+def find_local_peaks(df: pd.DataFrame, window=5, prominence_threshold=0.1):
+    """
+    Find significant local peaks in the price data
+
+    Args:
+        df: DataFrame with 'high' and 'date' columns
+        window: Window size for peak detection
+        prominence_threshold: Relative prominence threshold (0-1)
+
+    Returns:
+        List of (date, high_price) tuples for peaks
+    """
+    if len(df) < window * 2:
+        return []
+
+    peaks = []
+    highs = df['high'].values
+    dates = df['date'].values
+
+    # Calculate relative prominence threshold
+    price_range = highs.max() - highs.min()
+    min_prominence = price_range * prominence_threshold
+
+    for i in range(window, len(highs) - window):
+        # Check if current point is higher than neighbors
+        is_peak = all(highs[i] >= highs[i-window:i]) and all(highs[i] >= highs[i+1:i+window+1])
+
+        if is_peak:
+            # Check prominence (how much higher than surrounding area)
+            left_min = min(highs[max(0, i-window):i])
+            right_min = min(highs[i+1:min(len(highs), i+window+1)])
+            prominence = highs[i] - max(left_min, right_min)
+
+            if prominence >= min_prominence:
+                peaks.append((dates[i], highs[i]))
+
+    return peaks
+
+
 def create_price_chart(df: pd.DataFrame, output_path: str = None):
     """
     Create a comprehensive price chart with migration markers
@@ -110,6 +149,20 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
             # Plot candlesticks for this pool
             plot_candlesticks(ax1, pool_df, color=pool_colors.get(pool_name, '#333333'), alpha=0.9)
             plotted_pools.append((pool_name, pool_colors.get(pool_name, '#333333')))
+
+            # Find and mark local peaks (highs) for this pool
+            peaks = find_local_peaks(pool_df, window=5, prominence_threshold=0.15)
+            for peak_date, peak_high in peaks:
+                # Add arrow pointing to the peak
+                ax1.annotate('', xy=(peak_date, peak_high),
+                           xytext=(peak_date, peak_high * 1.08),
+                           arrowprops=dict(arrowstyle='->', color='#FF4444',
+                                         lw=1.5, alpha=0.7),
+                           zorder=10)
+                # Add price label
+                ax1.text(peak_date, peak_high * 1.10, f'${peak_high:.4f}',
+                        ha='center', va='bottom', fontsize=7, color='#FF4444',
+                        weight='bold', alpha=0.8)
 
     # Add migration markers with transition labels
     for event_name, timestamp in config.MIGRATION_DATES.items():
