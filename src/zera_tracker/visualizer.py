@@ -28,13 +28,13 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
     # Color mapping for different pools
     pool_colors = {
         'mon3y': '#FF6B6B',      # Red for M0N3Y
-        'zera_pool2': '#4ECDC4', # Teal for ZERA Raydium
-        'zera_pool3': '#45B7D1'  # Blue for ZERA Meteora
+        'zera_Raydium': '#4ECDC4', # Teal for ZERA Raydium
+        'zera_Meteora': '#45B7D1'  # Blue for ZERA Meteora
     }
 
     # Migration timestamps for filtering
     migration_1 = datetime.fromtimestamp(config.MIGRATION_DATES['mon3y_to_zera'])
-    migration_2 = datetime.fromtimestamp(config.MIGRATION_DATES['zera_pool2_to_pool3'])
+    migration_2 = datetime.fromtimestamp(config.MIGRATION_DATES['zera_Raydium_to_Meteora'])
 
     # Plot 1: Price over time
     # Plot each pool's real data
@@ -47,16 +47,23 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
         if pool_name == 'mon3y':
             # M0N3Y ends BEFORE ZERA Raydium starts (exclude migration date)
             pool_df = pool_df[pool_df['date'] < migration_1]
-        elif pool_name == 'zera_pool2':
+        elif pool_name == 'zera_Raydium':
             # ZERA Raydium starts at migration_1, ends BEFORE Meteora starts
             pool_df = pool_df[pool_df['date'] < migration_2]
         # Meteora has no cutoff (it's current, starts at migration_2)
 
         if len(pool_df) > 0:
-            ax1.plot(pool_df['date'], pool_df['close'],
+            # Calculate bar width based on data density
+            if len(pool_df) > 1:
+                avg_timedelta = (pool_df['date'].iloc[-1] - pool_df['date'].iloc[0]) / len(pool_df)
+                bar_width = avg_timedelta * 0.8  # 80% of period for spacing
+            else:
+                bar_width = 0.8
+
+            ax1.bar(pool_df['date'], pool_df['close'],
                     label=config.POOLS[pool_name]['name'],
                     color=pool_colors.get(pool_name, '#333333'),
-                    linewidth=2, alpha=0.8)
+                    width=bar_width, alpha=0.8, edgecolor='black', linewidth=0.5)
 
     # Plot interpolated segments (each gap separately)
     interp_df = df[df.get('is_interpolated', False)].copy()
@@ -69,17 +76,24 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
             # Sort by timestamp
             interp_segment = interp_segment.sort_values('timestamp')
 
+            # Calculate bar width for interpolated data
+            if len(interp_segment) > 1:
+                avg_timedelta_interp = (interp_segment['date'].iloc[-1] - interp_segment['date'].iloc[0]) / len(interp_segment)
+                bar_width_interp = avg_timedelta_interp * 0.8
+            else:
+                bar_width_interp = 0.8
+
             # Plot this gap's interpolated points only
             if not legend_added:
-                ax1.plot(interp_segment['date'], interp_segment['close'],
+                ax1.bar(interp_segment['date'], interp_segment['close'],
                         color='#888888',
-                        linewidth=1.5, alpha=0.5, linestyle='--',
-                        label='Interpolated (Migration Gaps)')
+                        width=bar_width_interp, alpha=0.3, edgecolor='gray', linewidth=0.3,
+                        label='Interpolated (Migration Gaps)', linestyle='--')
                 legend_added = True
             else:
-                ax1.plot(interp_segment['date'], interp_segment['close'],
+                ax1.bar(interp_segment['date'], interp_segment['close'],
                         color='#888888',
-                        linewidth=1.5, alpha=0.5, linestyle='--')
+                        width=bar_width_interp, alpha=0.3, edgecolor='gray', linewidth=0.3)
 
     # Add migration markers
     for event_name, timestamp in config.MIGRATION_DATES.items():
@@ -113,7 +127,7 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
         # Cut off old pools BEFORE migration (new pools start AT migration)
         if pool_name == 'mon3y':
             pool_df = pool_df[pool_df['date'] < migration_1]
-        elif pool_name == 'zera_pool2':
+        elif pool_name == 'zera_Raydium':
             pool_df = pool_df[pool_df['date'] < migration_2]
 
         if len(pool_df) > 0:

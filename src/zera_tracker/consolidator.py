@@ -190,8 +190,8 @@ def get_summary_stats(df: pd.DataFrame) -> Dict:
         'avg_daily_volume': df['volume'].mean(),
         'pools': {
             'mon3y': len(df[df['pool_name'] == 'mon3y']),
-            'zera_pool2': len(df[df['pool_name'] == 'zera_pool2']),
-            'zera_pool3': len(df[df['pool_name'] == 'zera_pool3'])
+            'zera_Raydium': len(df[df['pool_name'] == 'zera_Raydium']),
+            'zera_Meteora': len(df[df['pool_name'] == 'zera_Meteora'])
         }
     }
 

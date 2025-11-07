@@ -9,16 +9,16 @@ print(f'  Average price: ${mon3y["close"].mean():.6f}')
 print(f'  Max price: ${mon3y["close"].max():.6f}')
 
 print('\nZERA Raydium:')
-pool2 = real_df[real_df['pool_name']=='zera_pool2']
-if len(pool2) > 0:
-    print(f'  Average price: ${pool2["close"].mean():.6f}')
-    print(f'  Max price: ${pool2["close"].max():.6f}')
+Raydium = real_df[real_df['pool_name']=='zera_Raydium']
+if len(Raydium) > 0:
+    print(f'  Average price: ${Raydium["close"].mean():.6f}')
+    print(f'  Max price: ${Raydium["close"].max():.6f}')
 
 print('\nZERA Meteora:')
-pool3 = real_df[real_df['pool_name']=='zera_pool3']
-if len(pool3) > 0:
-    print(f'  Average price: ${pool3["close"].mean():.6f}')
-    print(f'  Current price: ${pool3["close"].iloc[-1]:.6f}')
+Meteora = real_df[real_df['pool_name']=='zera_Meteora']
+if len(Meteora) > 0:
+    print(f'  Average price: ${Meteora["close"].mean():.6f}')
+    print(f'  Current price: ${Meteora["close"].iloc[-1]:.6f}')
 
 print('\n' + '='*60)
 print('If these are USD values, the axis labels need updating!')
