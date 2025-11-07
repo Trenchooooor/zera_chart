@@ -140,6 +140,41 @@ def find_local_troughs(df: pd.DataFrame, window=5, prominence_threshold=0.1):
     return troughs
 
 
+def filter_by_minimum_distance(points, min_distance_days=5):
+    """
+    Filter points to ensure minimum distance between them
+    Keeps the most prominent points when clustering occurs
+
+    Args:
+        points: List of (date, value) tuples
+        min_distance_days: Minimum days between marked points
+
+    Returns:
+        Filtered list of (date, value) tuples
+    """
+    if len(points) <= 1:
+        return points
+
+    # Sort by date
+    sorted_points = sorted(points, key=lambda x: x[0])
+    filtered = [sorted_points[0]]  # Always keep the first point
+
+    for current_date, current_value in sorted_points[1:]:
+        # Check distance from last kept point
+        last_date, last_value = filtered[-1]
+        time_diff = (current_date - last_date).days
+
+        if time_diff >= min_distance_days:
+            # Far enough away, keep this point
+            filtered.append((current_date, current_value))
+        else:
+            # Too close, keep the more extreme value
+            if abs(current_value) > abs(last_value):
+                filtered[-1] = (current_date, current_value)
+
+    return filtered
+
+
 def create_price_chart(df: pd.DataFrame, output_path: str = None):
     """
     Create a comprehensive price chart with migration markers
@@ -191,7 +226,10 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
             # Find and mark local peaks (highs) for this pool
             peaks = find_local_peaks(pool_df, window=5, prominence_threshold=0.15)
-            for peak_date, peak_high in peaks:
+            # Filter peaks to ensure minimum distance between markers
+            filtered_peaks = filter_by_minimum_distance(peaks, min_distance_days=5)
+
+            for peak_date, peak_high in filtered_peaks:
                 # Add green arrow pointing down to the peak
                 ax1.annotate('', xy=(peak_date, peak_high),
                            xytext=(peak_date, peak_high * 1.08),
@@ -205,7 +243,10 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
             # Find and mark local troughs (lows) for this pool
             troughs = find_local_troughs(pool_df, window=5, prominence_threshold=0.15)
-            for trough_date, trough_low in troughs:
+            # Filter troughs to ensure minimum distance between markers
+            filtered_troughs = filter_by_minimum_distance(troughs, min_distance_days=5)
+
+            for trough_date, trough_low in filtered_troughs:
                 # Add red arrow pointing up to the trough
                 ax1.annotate('', xy=(trough_date, trough_low),
                            xytext=(trough_date, trough_low * 0.92),
@@ -295,7 +336,7 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
     ax2.set_xlabel('Date', fontsize=12)
     ax2.set_ylabel('Volume (Millions USD)', fontsize=12)
-    ax2.set_title('Trading Volume Over Time (Millions)', fontsize=14)
+    ax2.set_title('Trading Volume Over Time', fontsize=14)
     ax2.grid(True, alpha=0.3, axis='y')
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
