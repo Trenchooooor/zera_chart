@@ -7,13 +7,13 @@ A comprehensive tool to track the complete price history of ZERA token, includin
 This project consolidates price data from three different liquidity pools to create a unified historical price timeline:
 
 1. **M0N3Y** (Original token) - Pool: `95AT5r4i85gfqeew2yR6BYFG8RLrY1d9ztPs7qrSKDVc`
-2. **ZERA Pool 2** (First migration) - Pool: `Nn9VMHJTqgG9L9F8SP3GEuFWC5zVuHrADCwehh7N7Di`
-3. **ZERA Pool 3** (Current pool) - Pool: `6oUJD1EHNVBNMeTpytmY2NxKWicz5C2JUbByUrHEsjhc`
+2. **ZERA Raydium** (First migration) - Pool: `Nn9VMHJTqgG9L9F8SP3GEuFWC5zVuHrADCwehh7N7Di`
+3. **ZERA Meteora** (Current pool) - Pool: `6oUJD1EHNVBNMeTpytmY2NxKWicz5C2JUbByUrHEsjhc`
 
 ### Migration Timeline
 
-- **October 2, 2025**: M0N3Y migrated to ZERA (Pool 2)
-- **November 5, 2025**: ZERA Pool 2 migrated to Pool 3 (current)
+- **October 2, 2025**: M0N3Y migrated to ZERA (Raydium)
+- **November 5, 2025**: ZERA Raydium migrated to Meteora (current)
 
 ## Features
 

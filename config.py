@@ -17,14 +17,14 @@ POOLS = {
     },
     "zera_pool2": {
         "address": "Nn9VMHJTqgG9L9F8SP3GEuFWC5zVuHrADCwehh7N7Di",
-        "name": "ZERA Pool 2 (First Migration)",
+        "name": "ZERA Raydium",
         "token_symbol": "ZERA",
         "active_from": "2025-10-02",
         "active_until": "2025-11-05"  # Second migration date
     },
     "zera_pool3": {
         "address": "6oUJD1EHNVBNMeTpytmY2NxKWicz5C2JUbByUrHEsjhc",
-        "name": "ZERA Pool 3 (Current)",
+        "name": "ZERA Meteora",
         "token_symbol": "ZERA",
         "active_from": "2025-11-05"
     }
@@ -33,7 +33,7 @@ POOLS = {
 # Migration Dates (Unix timestamps)
 MIGRATION_DATES = {
     "mon3y_to_zera": 1759363200,  # October 2, 2025 08:00:00 UTC
-    "zera_pool2_to_pool3": 1762300800  # November 5, 2025 08:00:00 UTC
+    "zera_pool2_to_pool3": 1762300800  # November 5, 2025 08:00:00 UTC (Raydium to Meteora)
 }
 
 # Output Configuration

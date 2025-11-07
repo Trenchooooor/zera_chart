@@ -28,8 +28,8 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
     # Color mapping for different pools
     pool_colors = {
         'mon3y': '#FF6B6B',      # Red for M0N3Y
-        'zera_pool2': '#4ECDC4', # Teal for ZERA Pool 2
-        'zera_pool3': '#45B7D1'  # Blue for ZERA Pool 3
+        'zera_pool2': '#4ECDC4', # Teal for ZERA Raydium
+        'zera_pool3': '#45B7D1'  # Blue for ZERA Meteora
     }
 
     # Migration timestamps for filtering
@@ -45,12 +45,12 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
         # Cut off old pools BEFORE migration (new pools start AT migration)
         if pool_name == 'mon3y':
-            # M0N3Y ends BEFORE ZERA Pool 2 starts (exclude migration date)
+            # M0N3Y ends BEFORE ZERA Raydium starts (exclude migration date)
             pool_df = pool_df[pool_df['date'] < migration_1]
         elif pool_name == 'zera_pool2':
-            # ZERA Pool 2 starts at migration_1, ends BEFORE Pool 3 starts
+            # ZERA Raydium starts at migration_1, ends BEFORE Meteora starts
             pool_df = pool_df[pool_df['date'] < migration_2]
-        # pool3 has no cutoff (it's current, starts at migration_2)
+        # Meteora has no cutoff (it's current, starts at migration_2)
 
         if len(pool_df) > 0:
             ax1.plot(pool_df['date'], pool_df['close'],
