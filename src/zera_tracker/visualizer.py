@@ -101,6 +101,45 @@ def find_local_peaks(df: pd.DataFrame, window=5, prominence_threshold=0.1):
     return peaks
 
 
+def find_local_troughs(df: pd.DataFrame, window=5, prominence_threshold=0.1):
+    """
+    Find significant local troughs (lows) in the price data
+
+    Args:
+        df: DataFrame with 'low' and 'date' columns
+        window: Window size for trough detection
+        prominence_threshold: Relative prominence threshold (0-1)
+
+    Returns:
+        List of (date, low_price) tuples for troughs
+    """
+    if len(df) < window * 2:
+        return []
+
+    troughs = []
+    lows = df['low'].values
+    dates = df['date'].values
+
+    # Calculate relative prominence threshold
+    price_range = lows.max() - lows.min()
+    min_prominence = price_range * prominence_threshold
+
+    for i in range(window, len(lows) - window):
+        # Check if current point is lower than neighbors
+        is_trough = all(lows[i] <= lows[i-window:i]) and all(lows[i] <= lows[i+1:i+window+1])
+
+        if is_trough:
+            # Check prominence (how much lower than surrounding area)
+            left_max = max(lows[max(0, i-window):i])
+            right_max = max(lows[i+1:min(len(lows), i+window+1)])
+            prominence = min(left_max, right_max) - lows[i]
+
+            if prominence >= min_prominence:
+                troughs.append((dates[i], lows[i]))
+
+    return troughs
+
+
 def create_price_chart(df: pd.DataFrame, output_path: str = None):
     """
     Create a comprehensive price chart with migration markers
@@ -153,15 +192,29 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
             # Find and mark local peaks (highs) for this pool
             peaks = find_local_peaks(pool_df, window=5, prominence_threshold=0.15)
             for peak_date, peak_high in peaks:
-                # Add arrow pointing to the peak
+                # Add green arrow pointing down to the peak
                 ax1.annotate('', xy=(peak_date, peak_high),
                            xytext=(peak_date, peak_high * 1.08),
-                           arrowprops=dict(arrowstyle='->', color='#FF4444',
+                           arrowprops=dict(arrowstyle='->', color='#26a69a',
                                          lw=1.5, alpha=0.7),
                            zorder=10)
-                # Add price label
+                # Add price label in green
                 ax1.text(peak_date, peak_high * 1.10, f'${peak_high:.4f}',
-                        ha='center', va='bottom', fontsize=7, color='#FF4444',
+                        ha='center', va='bottom', fontsize=7, color='#26a69a',
+                        weight='bold', alpha=0.8)
+
+            # Find and mark local troughs (lows) for this pool
+            troughs = find_local_troughs(pool_df, window=5, prominence_threshold=0.15)
+            for trough_date, trough_low in troughs:
+                # Add red arrow pointing up to the trough
+                ax1.annotate('', xy=(trough_date, trough_low),
+                           xytext=(trough_date, trough_low * 0.92),
+                           arrowprops=dict(arrowstyle='->', color='#ef5350',
+                                         lw=1.5, alpha=0.7),
+                           zorder=10)
+                # Add price label in red
+                ax1.text(trough_date, trough_low * 0.90, f'${trough_low:.4f}',
+                        ha='center', va='top', fontsize=7, color='#ef5350',
                         weight='bold', alpha=0.8)
 
     # Add migration markers with transition labels
@@ -242,7 +295,7 @@ def create_price_chart(df: pd.DataFrame, output_path: str = None):
 
     ax2.set_xlabel('Date', fontsize=12)
     ax2.set_ylabel('Volume (Millions USD)', fontsize=12)
-    ax2.set_title('Trading Volume Over Time', fontsize=14)
+    ax2.set_title('Trading Volume Over Time (Millions)', fontsize=14)
     ax2.grid(True, alpha=0.3, axis='y')
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
